@@ -11,12 +11,12 @@ class Card():
         self.suit = suit
         
         #face image of card instance
-        org_card_img = Image.open(f'card_images/{rank.lower()}_of_{suit.lower()}.png')
+        org_card_img = Image.open(f'blackjack_workings/card_images/{rank.lower()}_of_{suit.lower()}.png')
         resized_card_img = org_card_img.resize((card_width, card_height))
         self.card_face = ImageTk.PhotoImage(resized_card_img)
 
         #back image of card instance
-        org_card_back = Image.open('card_images/card back black.png')
+        org_card_back = Image.open('blackjack_workings/card_images/card back black.png')
         resized_card_back = org_card_back.resize((card_width, card_height))
         self.card_back = ImageTk.PhotoImage(resized_card_back)
 
