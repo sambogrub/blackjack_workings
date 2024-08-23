@@ -47,9 +47,11 @@ class Deck():
         self.card_width = card_width
         self.card_height = card_height
 
+    #starting deal
+    def starting_deal(self):
         self.create_deck()
         self.shuffle_deck()
-    
+
     #fill the deck with card instances
     def create_deck(self):
         for suit in self.suits:
@@ -76,10 +78,20 @@ class Dealer():
     def add_card(self, card):
         self.hand.append(card)
 
+    #clear the previous hand
+    def clear_hand(self):
+        self.hand = []
+
     #total card instance values in hand list
-    def get_hand_value(self):
+    def get_hand_value(self, start=False):
         value = 0
         num_aces = 0
+
+        #showing value of dealers face up card
+        if start:
+            return self.hand[0].get_value()
+
+        #show value for all cards
         for card in self.hand:
             value += card.get_value()
             if card.rank == 'ace':
@@ -107,6 +119,10 @@ class Player():
     #add card instance to player hand list
     def add_card(self, card):
         self.hand.append(card)
+
+    #clear the previous hand
+    def clear_hand(self):
+        self.hand = []
 
     #total card instance values in hand list
     def get_hand_value(self):
@@ -136,13 +152,14 @@ class BlackjackApp():
         style.theme_use('alt')
 
         self.window = root
-        self.window.geometry(f'{self.window_width}x{self.window_height}+50+50')
+        self.window.geometry(f'{self.window_width}x{self.window_height}+100+100')
         self.window.title("Blackjack")
-
 
         self.deck = Deck(self.image_width, self.image_height)
         self.dealer = Dealer()
         self.player = Player()
+        
+        self.playing_game = False
 
         self.create_frames()
         
@@ -158,13 +175,12 @@ class BlackjackApp():
     #create dealer frame and fill in with buttons and labels
     def create_dealer_frame(self):
         
-
         self.d_hand_value = tk.IntVar()
         self.d_hand_value.set(0)
 
         self.dealer_frame = ttk.Frame(self.window, borderwidth=2, relief='ridge')
         
-        new_game_button = ttk.Button(self.dealer_frame, text = 'New Game', command = self.deal_cards)
+        new_game_button = ttk.Button(self.dealer_frame, text = 'New Game', command = self.starting_deal)
 
         self.d_image_label_list = []
         for i in range(1,6):
@@ -189,8 +205,8 @@ class BlackjackApp():
         
         self.player_frame = ttk.Frame(self.window, borderwidth=2, relief='ridge')
 
-        hit_button = ttk.Button(self.player_frame, text = 'Hit')
-        stay_button = ttk.Button(self.player_frame, text = 'Stay')
+        hit_button = ttk.Button(self.player_frame, text = 'Hit', command = self.player_hit)
+        stay_button = ttk.Button(self.player_frame, text = 'Stand', command = self.player_stand)
 
         self.p_image_label_list = []
         for i in range(1,6):
@@ -208,11 +224,107 @@ class BlackjackApp():
         self.p_score_label.place(x = int(self.window_width)-90, rely=.4, height = 30, width = 80)
         self.p_score.place(x = int(self.window_width)-(self.image_width/2), rely=.55, height = 30, width = 20)
 
-    def deal_cards(self):
+    #dealing a new game
+    def starting_deal(self):
+        self.playing_game = True
+
+        #get new shuffled deck
+        self.deck.starting_deal()
+
+        #clear cards on screen
+        for label in self.d_image_label_list:
+            label.configure(image = None)
+            
+
+        for label in self.p_image_label_list:
+            label.configure(image = None)
+            
+
+        #clear the dealer and player hands
+        self.dealer.clear_hand()
+        self.player.clear_hand()
+
+        #add two cards to both the dealer and player hands, then displaying them
+        self.dealer.add_card(self.deck.deal_card())
         self.dealer.add_card(self.deck.deal_card())
         self.dealer_hand = self.dealer.hand
-        for i, card in enumerate(self.dealer_hand):
-            self.d_image_label_list[i].configure(image = card.card_face)
+        self.d_image_label_list[0].configure(image = self.dealer_hand[0].card_face)
+        self.d_image_label_list[1].configure(image = self.dealer_hand[1].card_back)
+
+        self.player.add_card(self.deck.deal_card())
+        self.player.add_card(self.deck.deal_card())
+        self.player_hand = self.player.hand
+        self.p_image_label_list[0].configure(image = self.player_hand[0].card_face)
+        self.p_image_label_list[1].configure(image = self.player_hand[1].card_face)
+
+        self.d_hand_value.set(self.dealer.get_hand_value(True))
+        self.p_hand_value.set(self.player.get_hand_value())
+
+        if self.player.get_hand_value() == 21:
+            self.game_outcome()
+
+    #players hit
+    def player_hit(self):
+        if self.playing_game==False:
+            return
+        self.player.add_card(self.deck.deal_card())
+        for i, card in enumerate(self.player_hand):
+            self.p_image_label_list[i].configure(image = card.card_face)
+        self.p_hand_value.set(self.player.get_hand_value())
+        if self.player.get_hand_value() > 21:
+            self.game_outcome()
+
+    #player stands
+    def player_stand(self):
+        if self.playing_game==False:
+            return
+        self.dealers_turn()
+
+    #dealers turn
+    def dealers_turn(self):
+        self.d_image_label_list[1].configure(image = self.dealer_hand[1].card_face)
+        self.d_hand_value.set(self.dealer.get_hand_value())
+        if self.dealer.get_hand_value() == 21:
+            self.game_outcome()
+            return
+        cards_delt = 2
+        while self.dealer.should_hit():
+            self.dealer.add_card(self.deck.deal_card())
+            self.d_image_label_list[cards_delt].configure(image = self.dealer_hand[cards_delt].card_face)
+            cards_delt +=1
+        
+        self.d_hand_value.set(self.dealer.get_hand_value())
+
+        self.game_outcome()
+
+    #game outcome window
+    def game_outcome(self):
+        self.playing_game = False
+        dealer_score = self.dealer.get_hand_value()
+        player_score = self.player.get_hand_value()
+        if player_score == 21 and len(self.player_hand) == 2:
+            outcome = 'Blackjack! You Won!'
+        elif dealer_score == 21 and len(self.dealer_hand) == 2:
+            outcome = 'Dealer Blackjack, You Lost!'
+        elif player_score > 21:
+            outcome = 'Player Bust, You Lost!'
+        elif dealer_score > 21:
+            outcome = 'Dealer Bust, You Won!'
+        elif dealer_score > player_score:
+            outcome = 'You Lost!'
+        elif player_score > dealer_score:
+            outcome = 'You Won!'
+        elif player_score == dealer_score:
+            outcome = 'You Tied'
+       
+        outcome_frame = ttk.Frame(self.window, borderwidth=4, relief='raised')
+        outcome_label = ttk.Label(outcome_frame, text = outcome)
+        outcome_button = ttk.Button(outcome_frame, text = 'OK', command = outcome_frame.destroy)
+        
+        outcome_frame.place(anchor = 'center', x = int(int(self.window_width)/2), y = int(int(self.window_height)/2), width=200, height=200)
+        outcome_label.place(anchor = 'n', x = 100, y = 45, width=175, height = 35)
+        outcome_button.place(anchor = 'n', x = 100, y = 80, width = 50, height = 35)
+        
 
 
 
