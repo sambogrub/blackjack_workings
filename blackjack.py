@@ -11,12 +11,12 @@ class Card():
         self.suit = suit
         
         #face image of card instance
-        org_card_img = Image.open(f'blackjack_workings/card_images/{rank.lower()}_of_{suit.lower()}.png')
+        org_card_img = Image.open(f'card_images/{rank.lower()}_of_{suit.lower()}.png')
         resized_card_img = org_card_img.resize((card_width, card_height))
         self.card_face = ImageTk.PhotoImage(resized_card_img)
 
         #back image of card instance
-        org_card_back = Image.open('blackjack_workings/card_images/card back black.png')
+        org_card_back = Image.open('card_images/card back black.png')
         resized_card_back = org_card_back.resize((card_width, card_height))
         self.card_back = ImageTk.PhotoImage(resized_card_back)
 
@@ -145,15 +145,19 @@ class BlackjackApp():
     def __init__(self, root):
         self.window_height = '300'
         self.window_width = '700'
-        self.image_height = int(int(self.window_height)/2)
-        self.image_width = int(int(self.window_width)/7)
+        self.image_height = int(int(self.window_height)/2) - 10
+        self.image_width = int(int(self.window_width)/7) - 10
         
         style = ttk.Style()
-        style.theme_use('alt')
+        style.theme_use('clam')
+        style.configure('TFrame', background='#2E8B57')
+        style.configure('TLabel', background='#2E8B57', foreground='white', font=('Helvetica', 12))
+        style.configure('TButton', font=('Helvetica', 10, 'bold'))
 
         self.window = root
         self.window.geometry(f'{self.window_width}x{self.window_height}+100+100')
         self.window.title("Blackjack")
+        self.window.configure(bg='#2E8B57')
 
         self.deck = Deck(self.image_width, self.image_height)
         self.dealer = Dealer()
@@ -163,14 +167,26 @@ class BlackjackApp():
 
         self.create_frames()
         
+        
     #create information frame
     def create_information_frame(self):
         self.instruction_frame = ttk.Frame(self.window)
+        instruction_label = ttk.Label(
+        self.instruction_frame, 
+        text="Welcome to Blackjack! Click 'New Game' to start. Hit to draw a card, Stand to hold.", 
+        anchor="center", 
+        font=('Helvetica', 10, 'italic')
+        )
+        instruction_label.pack(pady=5)
+        self.instruction_frame.place(relx=0.5, rely=0.02, anchor='n', width=int(self.window_width) - 5, height=30)
+        self.instruction_frame_placed = True
+
     
     #calls both dealer and player frame creation
     def create_frames(self):
         self.create_dealer_frame()
         self.create_player_frame()
+        self.create_information_frame()
 
     #create dealer frame and fill in with buttons and labels
     def create_dealer_frame(self):
@@ -178,7 +194,7 @@ class BlackjackApp():
         self.d_hand_value = tk.IntVar()
         self.d_hand_value.set(0)
 
-        self.dealer_frame = ttk.Frame(self.window, borderwidth=2, relief='ridge')
+        self.dealer_frame = ttk.Frame(self.window, padding=10)
         
         new_game_button = ttk.Button(self.dealer_frame, text = 'New Game', command = self.starting_deal)
 
@@ -203,7 +219,7 @@ class BlackjackApp():
         self.p_hand_value = tk.IntVar()
         self.p_hand_value.set(0)
         
-        self.player_frame = ttk.Frame(self.window, borderwidth=2, relief='ridge')
+        self.player_frame = ttk.Frame(self.window)
 
         hit_button = ttk.Button(self.player_frame, text = 'Hit', command = self.player_hit)
         stay_button = ttk.Button(self.player_frame, text = 'Stand', command = self.player_stand)
@@ -226,6 +242,10 @@ class BlackjackApp():
 
     #dealing a new game
     def starting_deal(self):
+        if self.instruction_frame_placed:
+            self.instruction_frame.destroy()
+            self.instruction_frame_placed = False
+
         self.playing_game = True
 
         #get new shuffled deck
@@ -317,15 +337,18 @@ class BlackjackApp():
         elif player_score == dealer_score:
             outcome = 'You Tied'
        
-        outcome_frame = ttk.Frame(self.window, borderwidth=4, relief='raised')
-        outcome_label = ttk.Label(outcome_frame, text = outcome)
-        outcome_button = ttk.Button(outcome_frame, text = 'OK', command = outcome_frame.destroy)
+        self.outcome_frame = ttk.Frame(self.window, borderwidth=4, relief='raised')
+        outcome_label = ttk.Label(self.outcome_frame, text = outcome)
+        outcome_button = ttk.Button(self.outcome_frame, text='Play Again', command=self.new_game_after_outcome)
         
-        outcome_frame.place(anchor = 'center', x = int(int(self.window_width)/2), y = int(int(self.window_height)/2), width=200, height=200)
+        self.outcome_frame.place(anchor = 'center', x = int(int(self.window_width)/2), y = int(int(self.window_height)/2), width=200, height=200)
         outcome_label.place(anchor = 'n', x = 100, y = 45, width=175, height = 35)
-        outcome_button.place(anchor = 'n', x = 100, y = 80, width = 50, height = 35)
+        outcome_button.place(anchor = 'n', x = 100, y = 80, width = 100, height = 35)
         
 
+    def new_game_after_outcome(self):
+        self.outcome_frame.destroy()
+        self.starting_deal()
 
 
 if __name__ == '__main__':
