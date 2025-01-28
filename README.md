@@ -22,6 +22,11 @@
      ```
 
 3. **Download or prepare the image folder:**
-   - Ensure you have a folder named `images` in the program's directory.
-   - Place all required images inside the `images` folder.
+   - This repository contains a folder name 'card_images' with the required images
+   - Ensure the 'card_images' folder is in the same directory as the program files
 
+## Usage
+
+1. Run the program:
+   ```bash
+   python main.py
